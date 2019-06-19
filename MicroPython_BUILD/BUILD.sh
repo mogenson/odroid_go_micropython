@@ -28,9 +28,10 @@
 #   size-files        - display detailed memory footprint of the firmware
 #   miniterm          - start pySerial command line program miniterm
 #   monitor           - start esp-idf terminal emulator
+#   mkfw              - build a fw file for ODROID GO
 
 # Options:
-#   -jN                                           - make with multicore option, N should be the number of cores used 
+#   -jN                                           - make with multicore option, N should be the number of cores used
 #   -v             | --verbose                    - enable verbose output, default: quiet output
 #   -f8            | --flashsize8                 - declare the Flash size of 8 MB
 #   -f16           | --flashsize16                - declare the Flash size of 16 MB
@@ -228,11 +229,11 @@ do
         echo "OK."
         if [ "${arg}" == "all" ]; then
             set_partitions ${APP_SIZE}
-            echo "--------------------------------"
+            echo "-------------------------------------------------------"
             echo "Build complete."
-            echo "You can now run ./BUILD.sh flash"
-            echo "to deploy the firmware to ESP32"
-            echo "--------------------------------"
+            echo "You can now run ./BUILD.sh flash to write bin to ESP32"
+            echo "or ./BUILD.sh mkfw to create ODROID GO fw file"
+            echo "-------------------------------------------------------"
         fi
         echo ""
     else
