@@ -40,6 +40,7 @@
 #include "driver/periph_ctrl.h"
 #include "esp_ota_ops.h"
 #include "esp_pm.h"
+#include "esp_vfs.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -141,23 +142,41 @@ void mp_task(void *pvParameter)
 
     ESP_LOGI("MicroPython", "[=== MicroPython FreeRTOS task started (sp=%08x) ===]\n", sp);
 
-    // === Mount internal flash file system ===
-    int res = mount_vfs(VFS_NATIVE_TYPE_SPIFLASH, VFS_NATIVE_INTERNAL_MP);
+    // === Mount sd card file system ===
+    if (mount_vfs(VFS_NATIVE_TYPE_SDCARD, VFS_NATIVE_EXTERNAL_MP) == 0) {
+        struct stat statbuf;
 
-    if (res == 0) {
-    	// run boot-up script 'boot.py'
-        pyexec_file("boot.py");
-        if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
-        	// Check if 'main.py' exists and run it
-        	FILE *fd;
-        	fd = fopen(VFS_NATIVE_MOUNT_POINT"/main.py", "rb");
-            if (fd) {
-            	fclose(fd);
-            	pyexec_file("main.py");
+        // boot.py
+        if (stat(VFS_NATIVE_SDCARD_MOUNT_POINT "/boot.py", &statbuf) == 0) {
+            pyexec_file("boot.py");
+        } else {
+            FILE *fd;
+            fd = fopen(VFS_NATIVE_SDCARD_MOUNT_POINT "/boot.py", "wb");
+            if (fd != NULL) {
+                char buf[128] = {'\0'};
+                sprintf(buf, "# This file is executed on every boot (including wake-boot from deepsleep)\nimport sys\nsys.path[1] = '/sd/lib'\n");
+                int len = strlen(buf);
+                if (fwrite(buf, 1, len, fd) != len) {
+                    ESP_LOGE("MicroPython", "Error writing to 'boot.py'");
+                } else {
+                    ESP_LOGD("MicroPython", "** 'boot.py' created **");
+                }
+                fclose(fd);
+            } else {
+                ESP_LOGE("MicroPython", "Error creating 'boot.py'");
             }
         }
+
+        // main.py
+        if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+            if (stat(VFS_NATIVE_SDCARD_MOUNT_POINT "/boot.py", &statbuf) == 0) {
+                pyexec_file("boot.py");
+            }
+        }
+
+    } else {
+        ESP_LOGE("MicroPython", "Error mounting sd card file system");
     }
-    else ESP_LOGE("MicroPython", "Error mounting Flash file system");
 
     gc_info_t info;
     gc_info(&info);

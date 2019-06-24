@@ -873,22 +873,18 @@ executeCommand() {
         if [ ! -x ${BUILD_BASE_DIR}/mkfw/mkfw ]; then
             gcc ${BUILD_BASE_DIR}/mkfw/main.c ${BUILD_BASE_DIR}/mkfw/crc32.c \
                 -o ${BUILD_BASE_DIR}/mkfw/mkfw
-
         fi
+
         if [ -x ${BUILD_BASE_DIR}/mkfw/mkfw ]; then
             # ESP Partition Type: 0 (application)
             # ESP Partition SubType: 16 (OTA0)
             # Image Size: 3145728 (48 x 64KiB pages)
             # ESP Partition Title: MicroPython
-            echo -n -e '\xff\xff\xff\xff' > ${BUILD_BASE_DIR}/mkfw/empty.bin
-            ${BUILD_BASE_DIR}/mkfw/mkfw "MicroPython $(date +%Y%m%d)" \
-                ${BUILD_BASE_DIR}/mkfw/tile.raw 0 16 3145728 app \
-                build/MicroPython.bin 1 130 4194304 internalfs \
-                ${BUILD_BASE_DIR}/mkfw/empty.bin
+            ${BUILD_BASE_DIR}/mkfw/mkfw \
+                "MicroPython $(date +%Y%m%d)" ${BUILD_BASE_DIR}/mkfw/tile.raw \
+                0 16 3145728 app ${BUILD_BASE_DIR}/build/MicroPython.bin
             echo "output_file=build/MicroPython.fw"
-            mv ${BUILD_BASE_DIR}/firmware.fw \
-                ${BUILD_BASE_DIR}/build/MicroPython.fw
-            rm ${BUILD_BASE_DIR}/mkfw/empty.bin
+            mv ${BUILD_BASE_DIR}/firmware.fw ${BUILD_BASE_DIR}/build/MicroPython.fw
         fi
 
     #---
